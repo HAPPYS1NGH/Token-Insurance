@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import "./PriceConvertor.sol";
-import "./IERC20.sol";
+import "forge-std/interfaces/IERC20.sol";
 
 pragma solidity 0.8.18;
 

@@ -5,7 +5,7 @@ libs = ["lib"]
 gas_reports = ["*"]
 
 [rpc_endpoints]
-mainnet = "${RPC_URL}"
+mainnet = "env(RPC_URL)"
 
 [etherscan]
 goerli = { key = "${ETHERSCAN_API_KEY}" }

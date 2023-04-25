@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import "./PriceConvertor.sol";
 import "forge-std/interfaces/IERC20.sol";
+import "forge-std/console.sol";
 
 pragma solidity 0.8.18;
 
@@ -17,6 +18,10 @@ contract CryptoAssetInsuranceFactory {
         plans[1] = 1;
         plans[2] = 5;
         plans[3] = 10;
+    }
+
+    function getOwner() public view returns (address) {
+        return owner;
     }
 
     receive() external payable {}
@@ -55,6 +60,9 @@ contract CryptoAssetInsuranceFactory {
         uint8 _plan = plans[plan];
         require(_plan != 0, "Invalid Plan");
         uint256 priceAtInsurance = getFeedValueOfAsset(oracleAddress, decimals);
+        console.log(priceAtInsurance);
+        console.log("Inside //////////////////////////////////");
+        console.log((priceAtInsurance * tokensInsured * _plan * timePeriod) / (100 * 10 ** decimals));
         require(
             msg.value == ((priceAtInsurance * tokensInsured * _plan * timePeriod) / (100 * 10 ** decimals)),
             "Not send Insurance Amount"

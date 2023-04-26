@@ -43,18 +43,27 @@ contract ContractIERC20Test is Test {
         vm.stopPrank();
     }
 
-    function fundAddresses() public {
+    function test_fundAddresses() public {
         uint256 amount = 100_000000;
         for (uint256 i = 0; i < addresses.length; i++) {
+            uint256 bal = USDC.balanceOf(addresses[i]);
+            assertEq(bal, 0);
             bool success = USDC.transfer(addresses[i], amount);
             assertEq(success, true);
-            uint256 bal = USDC.balanceOf(addresses[i]);
+            bal = USDC.balanceOf(addresses[i]);
             assertEq(bal, 100000000);
         }
     }
 
+    function fundAddresses() public {
+        uint256 amount = 100_000000;
+        for (uint256 i = 0; i < addresses.length; i++) {
+            bool success = USDC.transfer(addresses[i], amount);
+            require(success);
+        }
+    }
+
     function test_Asset() public {
-        // vm.startPrank(addresses[0]);
         uint256 _planAmount;
         for (uint8 i = 0; i < addresses.length; i++) {
             if (i == 0) {
@@ -66,37 +75,61 @@ contract ContractIERC20Test is Test {
                     _planAmount = 10;
                 }
             }
+            startHoax(addresses[i]);
+            uint256 price = factory.getFeedValueOfAsset(oracle);
+            uint256 bal = USDC.balanceOf(addresses[i]);
+            assertEq(bal, 100000000);
+            uint256 _value = factory.calculateDepositMoney(bal, _planAmount, price, 6, i + 1);
+            factory.getInsurance{value: _value}((i + 1), usdc, (i + 1), oracle, 6);
+            address contractAsset = factory.getCustomerToContract(addresses[i]);
+            contracts.push(contractAsset);
+            AssetWalletInsurance childContract = AssetWalletInsurance(payable(contractAsset));
+            assertEq(addresses[i], childContract.owner());
+            vm.stopPrank();
+        }
+    }
 
+    function asset() public {
+        uint256 _planAmount;
+        for (uint8 i = 0; i < addresses.length; i++) {
+            if (i == 0) {
+                _planAmount = 1;
+            } else {
+                if (i == 1) {
+                    _planAmount = 5;
+                } else {
+                    _planAmount = 10;
+                }
+            }
             startHoax(addresses[i]);
             uint256 price = factory.getFeedValueOfAsset(oracle);
             uint256 bal = USDC.balanceOf(addresses[i]);
             uint256 _value = factory.calculateDepositMoney(bal, _planAmount, price, 6, i + 1);
             factory.getInsurance{value: _value}((i + 1), usdc, (i + 1), oracle, 6);
             address contractAsset = factory.getCustomerToContract(addresses[i]);
-            // console.log("Iteration");
-            // console.log(i);
-            // console.log(contractAsset);
             contracts.push(contractAsset);
-            AssetWalletInsurance childContract = AssetWalletInsurance(payable(contractAsset));
             vm.makePersistent(addresses[i]);
             vm.makePersistent(contractAsset);
             vm.makePersistent(address(factory));
-            assertEq(addresses[i], childContract.owner());
             vm.stopPrank();
         }
     }
-    //16805230
 
     function test_Claim() public {
-        test_Asset();
+        asset();
         string memory value = vm.envString("RPC_URL");
-        vm.createSelectFork(value, 16804030);
+        vm.createSelectFork(value, 16808030);
         for (uint256 i = 0; i < addresses.length; i++) {
-            console.log(contracts[i].balance);
+            assertEq(contracts[i].balance, 0);
             startHoax(addresses[i]);
             AssetWalletInsurance assetContract = AssetWalletInsurance(payable(contracts[i]));
+            assertEq(assetContract.isClaimed(), false);
             assetContract.claim();
-            console.log(contracts[i].balance);
+            assertEq(assetContract.isClaimed(), true);
+            uint256 bal = contracts[i].balance;
+            assertGt(bal, 0);
+            assetContract.withdrawClaim();
+            assertEq(contracts[i].balance, 0);
             vm.stopPrank();
         }
     }
@@ -106,7 +139,9 @@ contract ContractIERC20Test is Test {
         console.log(0xA1cA8926c1A9A78a3EFfAE666E57b0065d78A604.balance);
         // vm.makePersistent(0xA1cA8926c1A9A78a3EFfAE666E57b0065d78A604);
         // vm.rollFork(16804030);
-        vm.createSelectFork("https://eth-mainnet.g.alchemy.com/v2/7HGAc8jupPxgmBuEZagmzM7oNtkA1gF8", 16804030);
+
+        string memory value = vm.envString("RPC_URL");
+        vm.createSelectFork(value, 16804030);
         console.log(0xA1cA8926c1A9A78a3EFfAE666E57b0065d78A604.balance);
     }
 
@@ -140,7 +175,8 @@ contract ContractIERC20Test is Test {
         // vm.rollFork(16804030);
         // string memory value = vm.envString("RPC_URL");
         // vm.createSelectFork(value, 16804030);
-        vm.createSelectFork("https://eth-mainnet.g.alchemy.com/v2/7HGAc8jupPxgmBuEZagmzM7oNtkA1gF8", 16804030);
+        string memory value = vm.envString("RPC_URL");
+        vm.createSelectFork(value, 16804030);
         AggregatorV3Interface priceFeed2 = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
         (
             /* uint80 roundID */
@@ -157,10 +193,4 @@ contract ContractIERC20Test is Test {
         // console.log(bal);
         emit Log("Did something!", (10 ** 26) / price2);
     }
-
-    // function test_Fork() public {
-    //     // uint256 bal = USDC.balanceOf(0x0A59649758aa4d66E25f08Dd01271e891fe52199);
-    //     string memory expected = "https://eth-mainnet.g.alchemy.com/v2/7HGAc8jupPxgmBuEZagmzM7oNtkA1gF8";
-    //     assertEq(output, expected);
-    // }
 }

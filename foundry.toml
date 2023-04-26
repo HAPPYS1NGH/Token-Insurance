@@ -5,9 +5,7 @@ libs = ["lib"]
 gas_reports = ["*"]
 
 [rpc_endpoints]
-mainnet = "env(RPC_URL)"
-
-[etherscan]
-goerli = { key = "${ETHERSCAN_API_KEY}" }
+mainnet = "${MAINNET_RPC_URL}"
+goerli = "${SEPOLIA_RPC-URL}"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

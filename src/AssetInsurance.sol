@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 import "./AggregatorV3Interface.sol";
 import "forge-std/interfaces/IERC20.sol";
-import "forge-std/console.sol";
 
 pragma solidity 0.8.18;
 
@@ -15,6 +14,7 @@ contract CryptoAssetInsuranceFactory {
 
     constructor(address _ethToUsd) payable {
         require(msg.value >= 1 ether);
+        require(_ethToUsd != address(0));
         owner = msg.sender;
         plans[1] = 1;
         plans[2] = 5;
@@ -87,17 +87,17 @@ contract CryptoAssetInsuranceFactory {
         // console.log("Calculate _tokens _plan, _priceAtInsurance,_decimals _timePeriod");
         // console.log(_tokens);
         // console.log(_plan);
-        console.log(_priceAtInsurance);
+        // console.log(_priceAtInsurance);
         // console.log(_decimals);
         // console.log(_timePeriod);
         //decimals left
-        uint256 dollars = (_priceAtInsurance * _tokens * _plan * _timePeriod) / (10 ** (_decimals * 2 + 2));
-        // console.log(dollars);
         uint256 conversionRate = getUsdToWei();
-        console.log(conversionRate);
-        uint256 pricePayable = conversionRate * dollars;
-        console.log("Price Payable");
-        console.log(pricePayable);
+        uint256 pricePayable =
+            (_priceAtInsurance * _tokens * _plan * _timePeriod * conversionRate) / (10 ** (_decimals * 2 + 2));
+        // console.log(dollars);
+        // console.log(conversionRate);
+        // console.log("Price Payable");
+        // console.log(pricePayable);
 
         return pricePayable;
     }
@@ -142,7 +142,7 @@ contract CryptoAssetInsuranceFactory {
         require(_claimAmount != 0, "Claim Amount Should not be 0");
         uint256 conversionRate = getUsdToWei();
         uint256 amountSent = (conversionRate * _claimAmount) / 10 ** _decimals;
-        console.log(amountSent);
+        // console.log(amountSent);
         require(amountSent < address(this).balance, "Not enough Funds in Contract");
         (bool sent,) = msg.sender.call{value: amountSent}("");
         require(sent, "Transaction was not successsful");
@@ -193,11 +193,11 @@ contract AssetWalletInsurance {
         require(timePeriod > block.timestamp, "Oops your Insurance Expired");
         require(!claimed);
         uint256 currentPrice = getFeedValueOfAsset(oracleAddress);
-        console.log("Current Price");
-        console.log(currentPrice);
+        // console.log("Current Price");
+        // console.log(currentPrice);
         require(currentPrice < priceAtInsurance, "There is no change in Asset");
         uint256 totalAmount = getInsuranceAmount(currentPrice);
-        console.log(totalAmount);
+        // console.log(totalAmount);
         require(totalAmount > 0);
         uint256 maximumClaimableAmmount = (totalAmount * plan) / 10;
         if (totalAmount < maximumClaimableAmmount) {
@@ -233,8 +233,8 @@ contract AssetWalletInsurance {
     function claim() public onlyOwner {
         require(!claimed, "Already Claimed Reward");
         verifyInsurance();
-        console.log("Claim amount is //////////////");
-        console.log(claimAmount);
+        // console.log("Claim amount is //////////////");
+        // console.log(claimAmount);
         claimed = true;
         (bool success,) = factoryContract.call(abi.encodeWithSignature("claimInsurance()"));
         require(success, "Transaction Failed in claim");
@@ -242,6 +242,10 @@ contract AssetWalletInsurance {
 
     function getClaimAmount() public view returns (uint256) {
         return claimAmount;
+    }
+
+    function isClaimed() public view returns (bool) {
+        return claimed;
     }
 
     receive() external payable {}

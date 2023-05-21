@@ -1,0 +1,2 @@
+# Token-Insurance
+In the Insurance Contract Project, I developed a Solidity smart contract solution to provide insurance coverage for smart contracts against loss or fund withdrawal. The project consisted of two Factory Model contracts that allowed users to choose from three coverage plans (10%, 50%, or 100%) to protect against potential risks. The contracts also offered token insurance against loss in value, with oracles fetching price feed data for accurate valuation.
